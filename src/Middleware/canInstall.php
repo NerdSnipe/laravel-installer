@@ -4,6 +4,7 @@ namespace RachidLaasri\LaravelInstaller\Middleware;
 
 use Closure;
 use Redirect;
+use RachidLaasri\LaravelInstaller\Helpers\InstalledFileManager;
 
 class canInstall
 {
@@ -16,7 +17,11 @@ class canInstall
      */
     public function handle($request, Closure $next)
     {
-        if ($this->alreadyInstalled()) {
+        $installerEnabled = filter_var(config('installer.installerEnabled', true), FILTER_VALIDATE_BOOLEAN);
+        $ignoreAlreadyInstalled = filter_var(config('installer.ignoreAlreadyInstalled', false), FILTER_VALIDATE_BOOLEAN);
+
+        if(!$ignoreAlreadyInstalled) {
+            if (InstalledFileManager::alreadyInstalled() || !$installerEnabled) {
             $installedRedirect = config('installer.installedAlreadyAction');
 
             switch ($installedRedirect) {
@@ -44,17 +49,8 @@ class canInstall
                     break;
             }
         }
+        }
 
         return $next($request);
-    }
-
-    /**
-     * If application is already installed.
-     *
-     * @return bool
-     */
-    public function alreadyInstalled()
-    {
-        return file_exists(storage_path('installed'));
     }
 }
